@@ -20,6 +20,8 @@ public class Input_PlayerMovement : MonoBehaviour
     private string input_Slot4;
     private string input_Zoom;
     private string input_Focus;
+
+    public float mouseSensitivity;
     private void Awake()
     {
         input_ActionButton = "";
@@ -38,6 +40,8 @@ public class Input_PlayerMovement : MonoBehaviour
         input_Slot4 = "";
         input_Zoom = "";
         input_Focus = "";
+
+        mouseSensitivity = 100f;
     }
 
     public string GetButton(int buttonNum)
