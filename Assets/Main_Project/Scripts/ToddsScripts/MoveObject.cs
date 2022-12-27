@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class MoveObject : MonoBehaviour
 {
-    Rigidbody rigidbody;
+    new Rigidbody rigidbody;
     // Start is called before the first frame update
     void Start()
     {
@@ -14,25 +14,23 @@ public class MoveObject : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if(!Input.anyKeyDown){
+        if(!Input.anyKey){
             return;
         }
+        
         string input = Input.inputString;
         switch(input){
             case "w":
-                rigidbody.velocity = Vector3.forward * 25;
+                rigidbody.velocity = Vector3.forward * 3;
                 break;
             case "s":
-                rigidbody.velocity = Vector3.back * 25;
+                rigidbody.velocity = Vector3.back * 3;
                 break;
             case "a":
-                rigidbody.velocity = Vector3.left * 25;
+                rigidbody.velocity = Vector3.left * 3;
                 break;
             case "d":
-                rigidbody.velocity = Vector3.right * 25;
-                break;
-            case "space":
-                rigidbody.AddForce(Vector3.up * 150);
+                rigidbody.velocity = Vector3.right * 3;
                 break;
             default:
                 break;
