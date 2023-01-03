@@ -15,5 +15,5 @@ MonoBehaviour:
   id: InventoryItem_Distract
   displayName: Ringer
   icon: {fileID: 21300000, guid: a6cdcff5192a2b44e9c70bbbd8ce46d1, type: 3}
-  prefab: {fileID: 0}
+  prefab: {fileID: 8475594718873838563, guid: 6fe4cdbebb1b79d46b2bc763df5db45c, type: 3}
   MaxStackSize: 2

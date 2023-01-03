@@ -15,5 +15,5 @@ MonoBehaviour:
   id: InventoryItem_Health
   displayName: HealthKit
   icon: {fileID: 21300000, guid: 0c6e0c3539b85ac4c8f6cd7d269b1f89, type: 3}
-  prefab: {fileID: 0}
+  prefab: {fileID: 1309200132231128508, guid: 1e39ae0e3c693ff42b62d33e5ef419f3, type: 3}
   MaxStackSize: 3
