@@ -6,11 +6,9 @@ using UnityEngine.UI;
 public class LoadingInteraction : RepairMe
 {
 	public Image LoadingBar;
-	float currentValue;
 
 	private void Awake()
 	{
-		currentValue = 0;
 	}
 	void Update ()
 	{ 
