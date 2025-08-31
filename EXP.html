@@ -1,0 +1,399 @@
+<!DOCTYPE html><html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DMT Passage — The Last Moments</title>
+  <style>
+    :root{
+      --bg:#0b0f14;
+      --panel:#0e1420;
+      --accent:#7dd3fc;
+      --accent2:#a78bfa;
+      --good:#34d399;
+      --warn:#f59e0b;
+      --bad:#f87171;
+      --text:#e5e7eb;
+      --muted:#94a3b8;
+      --glow:0 0 30px rgba(125,211,252,.35);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;}
+    body{
+      margin:0; background:radial-gradient(1200px 800px at 80% -10%, rgba(167,139,250,.15), transparent),
+                                 radial-gradient(1000px 800px at -20% 120%, rgba(125,211,252,.12), transparent),
+                                 var(--bg);
+      color:var(--text); font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      display:flex; flex-direction:column; gap:14px; padding:14px;
+    }
+    header{display:flex; align-items:center; justify-content:space-between; gap:12px}
+    h1{font-size:clamp(18px, 3vw, 28px); margin:0; letter-spacing:.5px}
+    .subtitle{color:var(--muted); font-size:12px}
+    .wrap{display:grid; grid-template-columns: 1fr 340px; gap:14px; min-height:70vh}
+    @media (max-width: 980px){ .wrap{ grid-template-columns: 1fr; } }.card{background:linear-gradient(180deg, rgba(255,255,255,.03), transparent 120%), var(--panel); border:1px solid rgba(255,255,255,.06); border-radius:16px; box-shadow:var(--glow);}
+.stage{position:relative; min-height:60vh; overflow:hidden}
+canvas{display:block; width:100%; height:100%;}
+
+.hud{display:grid; gap:10px; padding:12px}
+.row{display:grid; gap:8px}
+
+.meters{display:grid; gap:10px}
+.meter{display:grid; gap:6px}
+.meter-label{font-size:12px; color:var(--muted); display:flex; justify-content:space-between}
+.bar{height:12px; background:rgba(255,255,255,.06); border-radius:999px; overflow:hidden; border:1px solid rgba(255,255,255,.06)}
+.fill{height:100%; width:0%; background:linear-gradient(90deg, var(--accent), var(--accent2)); box-shadow:0 0 12px rgba(167,139,250,.5);}
+
+.controls{display:flex; flex-wrap:wrap; gap:8px}
+.btn{
+  appearance:none; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.03); color:var(--text);
+  padding:10px 14px; border-radius:12px; cursor:pointer; transition:.2s transform, .2s background, .2s border;
+  font-weight:600; letter-spacing:.3px; backdrop-filter:saturate(120%) blur(2px);
+}
+.btn:hover{transform:translateY(-1px); border-color:rgba(255,255,255,.22)}
+.btn.primary{background:linear-gradient(180deg, rgba(125,211,252,.2), rgba(167,139,250,.14)); border-color:rgba(167,139,250,.35)}
+.btn.good{background:linear-gradient(180deg, rgba(52,211,153,.25), rgba(125,211,252,.12)); border-color:rgba(52,211,153,.4)}
+.btn.warn{background:linear-gradient(180deg, rgba(245,158,11,.2), rgba(125,211,252,.08)); border-color:rgba(245,158,11,.35)}
+.btn.bad{background:linear-gradient(180deg, rgba(248,113,113,.22), rgba(125,211,252,.08)); border-color:rgba(248,113,113,.35)}
+
+.log{padding:12px; max-height:38vh; overflow:auto; border-top:1px dashed rgba(255,255,255,.08)}
+.log p{margin:0 0 10px 0; color:#d1d5db}
+.log .sys{color:var(--muted)}
+
+.overlay{position:absolute; inset:0; display:none; align-items:center; justify-content:center; text-align:center; padding:24px}
+.overlay.show{display:flex}
+
+.choices{display:flex; gap:10px; justify-content:center; margin-top:16px; flex-wrap:wrap}
+
+.tag{display:inline-flex; align-items:center; gap:8px; font-size:12px; padding:4px 8px; border:1px solid rgba(255,255,255,.14); border-radius:999px; color:var(--muted)}
+
+footer{display:flex; gap:8px; align-items:center; justify-content:space-between; color:var(--muted)}
+.small{font-size:12px}
+
+/* Motion safety */
+.motion-warning{display:none; font-size:12px; color:#fde68a}
+.motion-on .motion-warning{display:block}
+
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>DMT Passage — The Last Moments</h1>
+      <div class="subtitle">A short, symbolic simulation of the body’s shutdown, a DMT surge, and two interpretations of what that means for mind and self.</div>
+    </div>
+    <div class="controls">
+      <button id="startBtn" class="btn primary">Start</button>
+      <button id="pauseBtn" class="btn">Pause</button>
+      <button id="resetBtn" class="btn">Reset</button>
+      <button id="motionBtn" class="btn" title="Reduce intense visuals">Reduce Motion</button>
+    </div>
+  </header>  <div class="wrap">
+    <section class="card stage" id="stage">
+      <canvas id="view"></canvas><div class="overlay" id="overlay">
+    <div>
+      <h2 id="overlayTitle">Threshold</h2>
+      <p id="overlayText">As DMT floods the system, something loosens. Two paths suggest themselves…</p>
+      <div class="choices" id="choices"></div>
+      <div class="tag" id="hintTag">Press [S] to Surrender • Press [C] to Cling</div>
+    </div>
+  </div>
+</section>
+
+<aside class="card">
+  <div class="hud">
+    <div class="row">
+      <div class="tag">State: <span id="stateLabel">idle</span></div>
+      <div class="tag motion-warning">Motion-reduced mode is ON</div>
+    </div>
+    <div class="meters">
+      <div class="meter"><div class="meter-label">Oxygen (O₂)<span id="o2Val">100%</span></div><div class="bar"><div id="o2Bar" class="fill"></div></div></div>
+      <div class="meter"><div class="meter-label">Heart Rate<span id="hrVal">80 bpm</span></div><div class="bar"><div id="hrBar" class="fill"></div></div></div>
+      <div class="meter"><div class="meter-label">DMT Flood<span id="dmtVal">0%</span></div><div class="bar"><div id="dmtBar" class="fill"></div></div></div>
+      <div class="meter"><div class="meter-label">Ego Boundary<span id="egoVal">100%</span></div><div class="bar"><div id="egoBar" class="fill"></div></div></div>
+      <div class="meter"><div class="meter-label">Serenity<span id="serVal">0%</span></div><div class="bar"><div id="serBar" class="fill"></div></div></div>
+    </div>
+
+    <div class="controls" style="margin-top:10px">
+      <button class="btn good" id="surrenderBtn" title="Let go into the experience (S)">Surrender</button>
+      <button class="btn bad" id="clingBtn" title="Hold tightly to bodily identity (C)">Cling</button>
+      <button class="btn warn" id="breatheBtn" title="Slow breath to stabilize">Guided Breath</button>
+    </div>
+  </div>
+  <div class="log" id="log"></div>
+</aside>
+
+  </div>  <footer>
+    <div class="small">Design logic: either a biological comfort response or a psychospiritual “parachute.” Your choices shift the symbolic outcome.</div>
+    <div class="small">Controls: [Space] Start/Pause • [S] Surrender • [C] Cling • [B] Breath • [R] Reset</div>
+  </footer>  <script>
+  // --- Utilities ---
+  const lerp = (a,b,t)=>a+(b-a)*t;
+  const clamp=(n,min,max)=>Math.min(Math.max(n,min),max);
+
+  function log(msg, cls=""){
+    const el=document.getElementById('log');
+    const p=document.createElement('p');
+    if(cls) p.className=cls; p.textContent=msg; el.prepend(p);
+  }
+
+  // --- Game State ---
+  const state = {
+    phase:'idle', // idle, shutdown, surge, threshold, transition_parachute, transition_raw, out
+    t:0,
+    paused:false,
+    reduceMotion:false,
+    // meters 0..1
+    o2:1,
+    hr:0.66, // normalized (rest ~0.66)
+    dmt:0,
+    ego:1,
+    serenity:0,
+  };
+
+  // --- DOM ---
+  const canvas = document.getElementById('view');
+  const ctx = canvas.getContext('2d');
+  const overlay = document.getElementById('overlay');
+  const overlayTitle = document.getElementById('overlayTitle');
+  const overlayText = document.getElementById('overlayText');
+  const choices = document.getElementById('choices');
+
+  const o2Bar = document.getElementById('o2Bar');
+  const hrBar = document.getElementById('hrBar');
+  const dmtBar = document.getElementById('dmtBar');
+  const egoBar = document.getElementById('egoBar');
+  const serBar = document.getElementById('serBar');
+  const o2Val = document.getElementById('o2Val');
+  const hrVal = document.getElementById('hrVal');
+  const dmtVal = document.getElementById('dmtVal');
+  const egoVal = document.getElementById('egoVal');
+  const serVal = document.getElementById('serVal');
+  const stateLabel = document.getElementById('stateLabel');
+
+  const startBtn = document.getElementById('startBtn');
+  const pauseBtn = document.getElementById('pauseBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const motionBtn = document.getElementById('motionBtn');
+  const surrenderBtn = document.getElementById('surrenderBtn');
+  const clingBtn = document.getElementById('clingBtn');
+  const breatheBtn = document.getElementById('breatheBtn');
+
+  // --- Resize Canvas ---
+  function resize(){
+    const rect = canvas.parentElement.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.floor(rect.width * dpr);
+    canvas.height = Math.floor(rect.height * dpr);
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+  }
+  new ResizeObserver(resize).observe(document.getElementById('stage'));
+  window.addEventListener('orientationchange', resize);
+
+  // --- Visual System ---
+  const stars=[];
+  function initStars(){
+    stars.length=0;
+    const count = 220;
+    for(let i=0;i<count;i++){
+      stars.push({
+        x:Math.random(), y:Math.random(), z:Math.random(),
+        r:Math.random()*2+0.5
+      });
+    }
+  }
+  initStars();
+
+  function drawTunnel(t){
+    const {width:w, height:h} = canvas;
+    ctx.clearRect(0,0,w,h);
+
+    // Background breathing gradient
+    const g = ctx.createRadialGradient(w*0.5, h*0.5, 10, w*0.5, h*0.5, Math.max(w,h)*0.6);
+    const a = 0.15 + 0.1*Math.sin(t*0.0015);
+    g.addColorStop(0, `rgba(167,139,250,${0.14 + a})`);
+    g.addColorStop(1, `rgba(13,18,29,1)`);
+    ctx.fillStyle=g; ctx.fillRect(0,0,w,h);
+
+    // Stars rushing toward center (tunnel)
+    const cx=w/2, cy=h/2;
+    const speedBase = state.reduceMotion ? 0.002 : 0.006;
+    const speed = speedBase + state.dmt*0.02 + (1-state.o2)*0.02;
+    for(const s of stars){
+      s.z -= speed; if(s.z<=0) s.z=1;
+      const k = 0.5 + 2*(1-s.z);
+      const x = (s.x-0.5)*w*k + cx;
+      const y = (s.y-0.5)*h*k + cy;
+      const alpha = clamp(1 - s.z, 0.05, 0.9);
+      ctx.fillStyle = `rgba(125,211,252,${alpha})`;
+      ctx.beginPath(); ctx.arc(x,y, s.r*(1+2*(1-s.z)), 0, Math.PI*2); ctx.fill();
+    }
+
+    // Central aperture ("light") expands with DMT & serenity
+    const aperture = lerp(20, Math.min(w,h)*0.45, clamp(state.dmt*0.8 + state.serenity*0.6, 0, 1));
+    const g2 = ctx.createRadialGradient(cx, cy, aperture*0.2, cx, cy, aperture);
+    g2.addColorStop(0, `rgba(255,255,255,${0.85*clamp(0.2+state.serenity,0.2,1)})`);
+    g2.addColorStop(1, `rgba(255,255,255,0)`);
+    ctx.globalCompositeOperation='screen';
+    ctx.fillStyle=g2; ctx.beginPath(); ctx.arc(cx, cy, aperture, 0, Math.PI*2); ctx.fill();
+    ctx.globalCompositeOperation='source-over';
+
+    // Ego boundary ring—shrinks as ego falls
+    ctx.strokeStyle=`rgba(248,113,113,${0.6*clamp(state.ego,0.1,1)})`;
+    ctx.lineWidth=2.5;
+    const egoR = lerp(Math.min(w,h)*0.44, Math.min(w,h)*0.18, 1-state.ego);
+    ctx.beginPath(); ctx.arc(cx, cy, egoR, 0, Math.PI*2); ctx.stroke();
+
+    // Subtle text hints
+    ctx.fillStyle='rgba(226,232,240,0.75)';
+    ctx.font='12px ui-sans-serif, system-ui, Segoe UI, Roboto';
+    ctx.textAlign='center';
+    if(state.phase==='threshold'){
+      ctx.fillText('Two currents tug at you…', cx, cy-egoR-12);
+    }
+  }
+
+  // --- Phase Logic ---
+  function setPhase(p){
+    state.phase=p; state.t=0; overlay.classList.remove('show'); choices.innerHTML='';
+    stateLabel.textContent=p;
+    if(p==='idle'){
+      log('System idle. Press Start to begin.', 'sys');
+    }
+    if(p==='shutdown') log('Physiology destabilizes. O₂ dropping, heart erratic…');
+    if(p==='surge') log('Endogenous DMT surge. Boundaries loosen.');
+    if(p==='threshold'){
+      overlay.classList.add('show');
+      overlayTitle.textContent='Threshold';
+      overlayText.textContent='As the flood peaks, you sense a choice in how to relate to it.';
+      addChoice('Surrender (Parachute)', 'good', () => choosePath('parachute'));
+      addChoice('Cling to Body (Raw)', 'bad', () => choosePath('raw'));
+    }
+    if(p==='transition_parachute') log('You release. A gentle buoyancy gathers you.');
+    if(p==='transition_raw') log('You resist. The current churns—the tunnel shears into shards.');
+    if(p==='out') log('The scene quiets. Wherever you are now, the body is behind you.');
+  }
+
+  function addChoice(label, tone, cb){
+    const b=document.createElement('button'); b.className=`btn ${tone}`; b.textContent=label; b.onclick=cb; choices.appendChild(b);
+  }
+
+  function choosePath(path){
+    overlay.classList.remove('show');
+    if(path==='parachute'){
+      state.phase='transition_parachute'; state.t=0; state.serenity = Math.max(state.serenity, 0.6);
+    } else {
+      state.phase='transition_raw'; state.t=0; state.serenity = Math.max(state.serenity, 0.05);
+    }
+    stateLabel.textContent=state.phase;
+  }
+
+  function tick(dt){
+    if(state.paused) return;
+    state.t += dt;
+
+    switch(state.phase){
+      case 'idle':
+        break;
+      case 'shutdown': {
+        state.o2 = clamp(state.o2 - dt*0.00008, 0, 1);
+        const hrTarget = 0.4 + 0.12*Math.sin(state.t*0.006) + (1-state.o2)*0.3; // erratic as O2 drops
+        state.hr = lerp(state.hr, clamp(hrTarget,0,1), 0.05);
+        if(state.o2<0.7) setPhase('surge');
+        break; }
+      case 'surge': {
+        state.dmt = clamp(state.dmt + dt*0.00028 + (1-state.o2)*0.00035, 0, 1);
+        state.ego = clamp(state.ego - dt*0.00022 - state.dmt*0.00035, 0, 1);
+        state.serenity = clamp(state.serenity + dt*0.00008 + (surrenderHeld?0.00025:0), 0, 1);
+        if(state.dmt>0.82 || state.ego<0.3) setPhase('threshold');
+        break; }
+      case 'threshold': {
+        // hold at peak while awaiting choice
+        state.dmt = clamp(lerp(state.dmt, 0.92, 0.01), 0, 1);
+        state.ego = clamp(lerp(state.ego, 0.22, 0.01), 0, 1);
+        break; }
+      case 'transition_parachute': {
+        state.serenity = clamp(state.serenity + dt*0.00035, 0, 1);
+        state.ego = clamp(state.ego - dt*0.00012, 0, 1);
+        if(state.t>8000) setPhase('out');
+        break; }
+      case 'transition_raw': {
+        state.serenity = clamp(state.serenity + dt*0.00005, 0, 1);
+        // turbulence: ego oscillates
+        state.ego = clamp(state.ego + 0.12*Math.sin(state.t*0.01)*0.01 - dt*0.00006, 0, 1);
+        if(state.t>9000) setPhase('out');
+        break; }
+      case 'out': {
+        // quiet fade
+        state.dmt = lerp(state.dmt, 0.5, 0.002);
+        state.serenity = lerp(state.serenity, 0.8, 0.002);
+        break; }
+    }
+  }
+
+  // Guided breath effect
+  let breathPhase=0; let surrenderHeld=false;
+  function breath(){
+    // 4-4-6 simple cycle: inhale 4, hold 4, exhale 6 (symbolic smoothing)
+    // Each press advances phase and nudges variables
+    breathPhase = (breathPhase+1)%3;
+    if(breathPhase===0){ log('Inhale… (O₂ stabilizes slightly)','sys'); state.o2 = clamp(state.o2+0.03,0,1); }
+    if(breathPhase===1){ log('Hold… (Heart steadies)','sys'); state.hr = clamp(state.hr*0.96,0,1); }
+    if(breathPhase===2){ log('Exhale… (Serenity rises)','sys'); state.serenity = clamp(state.serenity+0.06,0,1); }
+  }
+
+  // --- UI Update ---
+  function ui(){
+    o2Bar.style.width = (state.o2*100).toFixed(0)+'%'; o2Val.textContent=(state.o2*100).toFixed(0)+'%';
+    hrBar.style.width = (state.hr*100).toFixed(0)+'%'; hrVal.textContent=(50 + Math.round(state.hr*70))+' bpm';
+    dmtBar.style.width = (state.dmt*100).toFixed(0)+'%'; dmtVal.textContent=(state.dmt*100).toFixed(0)+'%';
+    egoBar.style.width = (state.ego*100).toFixed(0)+'%'; egoVal.textContent=(state.ego*100).toFixed(0)+'%';
+    serBar.style.width = (state.serenity*100).toFixed(0)+'%'; serVal.textContent=(state.serenity*100).toFixed(0)+'%';
+
+    document.body.classList.toggle('motion-on', state.reduceMotion);
+  }
+
+  // --- Loop ---
+  let last=performance.now();
+  function frame(now){
+    const dt = now - last; last=now;
+    tick(dt);
+    drawTunnel(now);
+    ui();
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  // --- Controls ---
+  function start(){
+    if(state.phase==='idle' || state.phase==='out'){
+      state.o2=1; state.hr=0.66; state.dmt=0; state.ego=1; state.serenity=0; initStars();
+      setPhase('shutdown');
+    }
+  }
+  function pause(){ state.paused = !state.paused; pauseBtn.textContent = state.paused? 'Resume':'Pause'; }
+  function reset(){ state.o2=1; state.hr=0.66; state.dmt=0; state.ego=1; state.serenity=0; setPhase('idle'); initStars(); }
+
+  startBtn.addEventListener('click', start);
+  pauseBtn.addEventListener('click', pause);
+  resetBtn.addEventListener('click', reset);
+  motionBtn.addEventListener('click', ()=>{ state.reduceMotion=!state.reduceMotion; motionBtn.textContent = state.reduceMotion? 'Motion Reduced':'Reduce Motion'; });
+
+  surrenderBtn.addEventListener('mousedown', ()=>{ surrenderHeld=true; });
+  surrenderBtn.addEventListener('mouseup', ()=>{ surrenderHeld=false; if(state.phase==='threshold') choosePath('parachute'); });
+  clingBtn.addEventListener('click', ()=>{ if(state.phase==='threshold') choosePath('raw'); });
+  breatheBtn.addEventListener('click', breath);
+
+  window.addEventListener('keydown', (e)=>{
+    if(e.key===' '){ e.preventDefault(); state.paused? pause(): start(); }
+    if(e.key==='s' || e.key==='S'){ surrenderHeld=true; if(state.phase==='threshold') choosePath('parachute'); }
+    if(e.key==='c' || e.key==='C'){ if(state.phase==='threshold') choosePath('raw'); }
+    if(e.key==='b' || e.key==='B'){ breath(); }
+    if(e.key==='r' || e.key==='R'){ reset(); }
+  });
+  window.addEventListener('keyup', (e)=>{ if(e.key.toLowerCase()==='s') surrenderHeld=false; });
+
+  // --- Boot ---
+  resize(); setPhase('idle');
+  log('This is a symbolic art/toy — not medical advice.');
+  log('Choose how to relate to the surge: Surrender (parachute) or Cling (raw).');
+  </script></body>
+</html>
